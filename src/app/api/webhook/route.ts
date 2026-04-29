@@ -32,9 +32,6 @@ async function handleEvents(payload: LineWebhookBody): Promise<void> {
     const text = msgEvent.message.text.trim()
     const replyToken = msgEvent.replyToken
 
-    // 将来の重複チェック用: webhookEventId を保持
-    const _eventId = msgEvent.webhookEventId
-
     try {
       if (LIST_TRIGGERS.includes(text)) {
         const issues = await listIssues()
