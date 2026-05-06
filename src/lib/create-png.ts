@@ -1,74 +1,49 @@
-import { deflate } from 'node:zlib'
-import { promisify } from 'node:util'
-
-const deflateAsync = promisify(deflate)
-
-const CRC_TABLE = (() => {
-  const table: number[] = []
-  for (let n = 0; n < 256; n++) {
-    let c = n
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
-    }
-    table[n] = c
-  }
-  return table
-})()
-
-function crc32(buf: Buffer): number {
-  let crc = 0xffffffff
-  for (let i = 0; i < buf.length; i++) {
-    crc = CRC_TABLE[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8)
-  }
-  return (crc ^ 0xffffffff) >>> 0
-}
-
-function pngChunk(type: string, data: Buffer): Buffer {
-  const typeBytes = Buffer.from(type, 'ascii')
-  const lenBuf = Buffer.alloc(4)
-  lenBuf.writeUInt32BE(data.length, 0)
-  const crcBuf = Buffer.alloc(4)
-  crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBytes, data])), 0)
-  return Buffer.concat([lenBuf, typeBytes, data, crcBuf])
-}
+import sharp from 'sharp'
 
 type RGB = [number, number, number]
+
+export interface MenuSection {
+  color: RGB
+  icon: string
+  label: string
+}
 
 export async function createSectionedPng(
   width: number,
   height: number,
-  sections: RGB[]
+  sections: MenuSection[]
 ): Promise<Buffer> {
-  const sectionCount = sections.length
-  const sectionWidth = Math.floor(width / sectionCount)
+  const count = sections.length
+  const sectionWidth = Math.floor(width / count)
 
-  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+  const rects = sections.map((section, i) => {
+    const x = i * sectionWidth
+    const w = i === count - 1 ? width - x : sectionWidth
+    const [r, g, b] = section.color
+    const cx = x + w / 2
 
-  const ihdrData = Buffer.alloc(13)
-  ihdrData.writeUInt32BE(width, 0)
-  ihdrData.writeUInt32BE(height, 4)
-  ihdrData[8] = 8 // bit depth
-  ihdrData[9] = 2 // color type: RGB
-  const ihdr = pngChunk('IHDR', ihdrData)
+    return `
+      <rect x="${x}" y="0" width="${w}" height="${height}" fill="rgb(${r},${g},${b})"/>
+      <text x="${cx}" y="${height * 0.42}"
+        font-family="Hiragino Sans,Yu Gothic,Meiryo,Arial,sans-serif"
+        font-size="160" text-anchor="middle" dominant-baseline="middle"
+        fill="white">${section.icon}</text>
+      <text x="${cx}" y="${height * 0.72}"
+        font-family="Hiragino Sans,Yu Gothic,Meiryo,Arial,sans-serif"
+        font-size="110" font-weight="bold" text-anchor="middle" dominant-baseline="middle"
+        fill="white">${section.label}</text>
+    `
+  })
 
-  const stride = width * 3 + 1
-  const raw = Buffer.alloc(stride * height)
+  const dividers = Array.from({ length: count - 1 }, (_, i) => {
+    const x = (i + 1) * sectionWidth
+    return `<line x1="${x}" y1="20" x2="${x}" y2="${height - 20}" stroke="rgba(255,255,255,0.4)" stroke-width="6"/>`
+  })
 
-  for (let y = 0; y < height; y++) {
-    raw[y * stride] = 0 // filter: None
-    for (let x = 0; x < width; x++) {
-      const idx = Math.min(Math.floor(x / sectionWidth), sectionCount - 1)
-      const [r, g, b] = sections[idx]
-      const off = y * stride + 1 + x * 3
-      raw[off] = r
-      raw[off + 1] = g
-      raw[off + 2] = b
-    }
-  }
+  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    ${rects.join('')}
+    ${dividers.join('')}
+  </svg>`
 
-  const compressed = await deflateAsync(raw)
-  const idat = pngChunk('IDAT', compressed)
-  const iend = pngChunk('IEND', Buffer.alloc(0))
-
-  return Buffer.concat([signature, ihdr, idat, iend])
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }

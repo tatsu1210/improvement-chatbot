@@ -71,7 +71,7 @@ async function uploadRichMenuImage(richMenuId: string, png: Buffer): Promise<voi
   const res = await fetch(`${LINE_DATA_API}/richmenu/${richMenuId}/content`, {
     method: 'POST',
     headers: { ...authHeader(), 'Content-Type': 'image/png' },
-    body: png,
+    body: new Blob([new Uint8Array(png)], { type: 'image/png' }),
   })
 
   if (!res.ok) {
@@ -101,9 +101,9 @@ export async function setupRichMenu(): Promise<void> {
 
   console.log('メニュー画像を生成中...')
   const png = await createSectionedPng(2500, 843, [
-    [52, 168, 83],   // 緑: 課題登録
-    [234, 67, 53],   // 赤: 課題削除
-    [66, 133, 244],  // 青: 課題一覧
+    { color: [52, 168, 83],  icon: '＋', label: '課題登録' },
+    { color: [234, 67, 53],  icon: '✕', label: '課題削除' },
+    { color: [66, 133, 244], icon: '☰', label: '課題一覧' },
   ])
 
   console.log('画像をアップロード中...')
