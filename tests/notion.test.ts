@@ -15,7 +15,7 @@ vi.mock('@notionhq/client', () => ({
   Client: vi.fn(function () { return mockClient as any }),
 }))
 
-import { deleteIssue, listIssues } from '@/services/notion'
+import { createIssue, deleteIssue, listIssues } from '@/services/notion'
 
 const makeRawResult = (title: string, status: string, number: number) => ({
   created_time: '2026-01-01T00:00:00Z',
@@ -100,5 +100,39 @@ describe('listIssues', () => {
     const issues = await listIssues(5)
 
     expect(issues).toHaveLength(5)
+  })
+})
+
+describe('createIssue', () => {
+  it('creates a page and returns a NotionIssue', async () => {
+    mockClient.pages.create.mockResolvedValue({
+      id: 'new-page-id',
+      created_time: '2026-01-01T00:00:00Z',
+      properties: {
+        課題タイトル: { title: [{ plain_text: 'New Issue' }] },
+        ステータス: { select: { name: 'Raw' } },
+        通番: { unique_id: { number: 5 } },
+      },
+    })
+
+    const issue = await createIssue('New Issue')
+
+    expect(issue.id).toBe('new-page-id')
+    expect(issue.title).toBe('New Issue')
+    expect(issue.status).toBe('Raw')
+    expect(issue.number).toBe(5)
+    expect(mockClient.pages.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: { database_id: 'test-db-id' },
+      })
+    )
+  })
+
+  it('throws when NOTION_DATABASE_ID is not set', async () => {
+    delete process.env.NOTION_DATABASE_ID
+
+    await expect(createIssue('test')).rejects.toThrow('NOTION_DATABASE_ID is not set')
+
+    process.env.NOTION_DATABASE_ID = 'test-db-id'
   })
 })

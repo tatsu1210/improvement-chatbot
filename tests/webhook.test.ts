@@ -110,6 +110,15 @@ describe('POST /api/webhook', () => {
     expect(res.status).toBe(200)
     await vi.waitFor(() => expect(mockCreate).not.toHaveBeenCalled())
   })
+
+  it('calls replyWithError when createIssue throws in message handler', async () => {
+    mockVerify.mockResolvedValue(true)
+    mockCreate.mockRejectedValue(new Error('Notion down'))
+    vi.mocked(replyWithError).mockResolvedValue(undefined)
+    const req = makeRequest(messageEvent('何かのテキスト'))
+    await POST(req)
+    await vi.waitFor(() => expect(vi.mocked(replyWithError)).toHaveBeenCalledWith('reply-token-xxx'))
+  })
 })
 
 describe('POST /api/webhook (postback events)', () => {
