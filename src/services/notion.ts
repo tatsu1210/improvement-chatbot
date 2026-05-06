@@ -39,12 +39,22 @@ export async function createIssue(title: string): Promise<NotionIssue> {
   }
 }
 
+export async function deleteIssue(pageId: string): Promise<void> {
+  const notion = getClient()
+  await notion.pages.update({
+    page_id: pageId,
+    properties: {
+      ステータス: { select: { name: '削除済み' } },
+    },
+  })
+}
+
 export async function listIssues(limit = 10): Promise<NotionIssue[]> {
   const notion = getClient()
   const response = await notion.dataSources.query({
     data_source_id: getDataSourceId(),
     sorts: [{ property: '記録日時', direction: 'descending' }],
-    page_size: limit,
+    page_size: limit * 2,
   })
 
   return response.results
@@ -59,6 +69,8 @@ export async function listIssues(limit = 10): Promise<NotionIssue[]> {
         createdAt: p.created_time,
       }
     })
+    .filter((issue) => issue.status !== '削除済み')
+    .slice(0, limit)
 }
 
 function extractTitle(props: Record<string, unknown>): string {

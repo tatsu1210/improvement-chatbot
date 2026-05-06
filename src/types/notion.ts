@@ -1,4 +1,4 @@
-export type IssueStatus = 'Raw' | '整理済み' | '対応中' | '完了'
+export type IssueStatus = 'Raw' | '整理済み' | '対応中' | '完了' | '削除済み'
 
 export interface NotionIssue {
   id: string

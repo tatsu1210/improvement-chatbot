@@ -1,8 +1,15 @@
 import { waitUntil } from '@vercel/functions'
 import { verifyLineSignature } from '@/lib/verify-signature'
-import { createIssue, listIssues } from '@/services/notion'
-import { replyWithIssueCreated, replyWithIssueList, replyWithError } from '@/services/line-reply'
-import type { LineWebhookBody, LineMessageEvent } from '@/types/line-events'
+import { createIssue, listIssues, deleteIssue } from '@/services/notion'
+import {
+  replyWithIssueCreated,
+  replyWithIssueList,
+  replyWithError,
+  replyWithRegisterPrompt,
+  replyWithDeleteList,
+  replyWithDeleteConfirm,
+} from '@/services/line-reply'
+import type { LineWebhookBody, LineMessageEvent, LinePostbackEvent } from '@/types/line-events'
 
 const LIST_TRIGGERS = ['一覧を見る', '/list', '一覧', 'リスト']
 
@@ -25,23 +32,54 @@ export async function POST(request: Request): Promise<Response> {
 
 async function handleEvents(payload: LineWebhookBody): Promise<void> {
   for (const event of payload.events) {
-    if (event.type !== 'message') continue
-    const msgEvent = event as LineMessageEvent
-    if (msgEvent.message.type !== 'text') continue
-
-    const text = msgEvent.message.text.trim()
-    const replyToken = msgEvent.replyToken
-
-    try {
-      if (LIST_TRIGGERS.includes(text)) {
-        const issues = await listIssues()
-        await replyWithIssueList(replyToken, issues)
-      } else {
-        const issue = await createIssue(text)
-        await replyWithIssueCreated(replyToken, issue)
-      }
-    } catch {
-      await replyWithError(replyToken)
+    if (event.type === 'message') {
+      await handleMessageEvent(event as LineMessageEvent)
+    } else if (event.type === 'postback') {
+      await handlePostbackEvent(event as LinePostbackEvent)
     }
+  }
+}
+
+async function handleMessageEvent(event: LineMessageEvent): Promise<void> {
+  if (event.message.type !== 'text') return
+
+  const text = event.message.text.trim()
+  const { replyToken } = event
+
+  try {
+    if (LIST_TRIGGERS.includes(text)) {
+      const issues = await listIssues()
+      await replyWithIssueList(replyToken, issues)
+    } else {
+      const issue = await createIssue(text)
+      await replyWithIssueCreated(replyToken, issue)
+    }
+  } catch {
+    await replyWithError(replyToken)
+  }
+}
+
+async function handlePostbackEvent(event: LinePostbackEvent): Promise<void> {
+  const { replyToken } = event
+  const params = new URLSearchParams(event.postback.data)
+  const action = params.get('action')
+
+  try {
+    if (action === 'register') {
+      await replyWithRegisterPrompt(replyToken)
+    } else if (action === 'list') {
+      const issues = await listIssues()
+      await replyWithIssueList(replyToken, issues)
+    } else if (action === 'show_delete_list') {
+      const issues = await listIssues()
+      await replyWithDeleteList(replyToken, issues)
+    } else if (action === 'delete') {
+      const issueId = params.get('issueId')
+      if (!issueId) throw new Error('issueId is missing')
+      await deleteIssue(issueId)
+      await replyWithDeleteConfirm(replyToken)
+    }
+  } catch {
+    await replyWithError(replyToken)
   }
 }

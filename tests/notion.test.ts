@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@notionhq/client', () => ({
-  Client: vi.fn(),
-}))
-
-import { Client } from '@notionhq/client'
-import { deleteIssue, listIssues } from '@/services/notion'
-
-const mockClient = {
+const mockClient = vi.hoisted(() => ({
   pages: {
     create: vi.fn(),
     update: vi.fn(),
@@ -15,7 +8,14 @@ const mockClient = {
   dataSources: {
     query: vi.fn(),
   },
-}
+}))
+
+vi.mock('@notionhq/client', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Client: vi.fn(function () { return mockClient as any }),
+}))
+
+import { deleteIssue, listIssues } from '@/services/notion'
 
 const makeRawResult = (title: string, status: string, number: number) => ({
   created_time: '2026-01-01T00:00:00Z',
@@ -28,7 +28,6 @@ const makeRawResult = (title: string, status: string, number: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(Client).mockImplementation(() => mockClient as unknown as InstanceType<typeof Client>)
   process.env.NOTION_TOKEN = 'test-token'
   process.env.NOTION_DATABASE_ID = 'test-db-id'
   process.env.NOTION_DATA_SOURCE_ID = 'test-source-id'

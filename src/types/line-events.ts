@@ -11,6 +11,13 @@ export interface LineMessageEvent {
   source: { userId: string }
 }
 
+export interface LinePostbackEvent {
+  type: 'postback'
+  replyToken: string
+  postback: { data: string }
+  source: { userId: string }
+}
+
 export interface LineWebhookBody {
-  events: Array<LineMessageEvent | { type: string; replyToken?: string }>
+  events: Array<LineMessageEvent | LinePostbackEvent | { type: string; replyToken?: string }>
 }
