@@ -59,7 +59,8 @@ async function handleMessageEvent(event: LineMessageEvent): Promise<void> {
       const issue = await createIssue(text)
       await replyWithIssueCreated(replyToken, issue)
     }
-  } catch {
+  } catch (err) {
+    console.error('[handleMessageEvent]', err)
     await replyWithError(replyToken)
   }
 }
@@ -101,7 +102,8 @@ async function handlePostbackEvent(event: LinePostbackEvent): Promise<void> {
       await updateIssueIdea(issueId, '')
       await replyWithIdeaCancelled(replyToken)
     }
-  } catch {
+  } catch (err) {
+    console.error('[handlePostbackEvent] action=%s', action, err)
     await replyWithError(replyToken)
   }
 }

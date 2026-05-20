@@ -9,7 +9,7 @@ export async function generateImprovementIdea(issueTitle: string): Promise<strin
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'anthropic/claude-haiku-4-5-20251001',
+      model: 'anthropic/claude-haiku-4.5',
       messages: [
         {
           role: 'user',
@@ -21,7 +21,8 @@ export async function generateImprovementIdea(issueTitle: string): Promise<strin
   })
 
   if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.status}`)
+    const body = await response.text()
+    throw new Error(`OpenRouter API error: ${response.status} ${body}`)
   }
 
   const data = await response.json() as { choices: Array<{ message: { content: string } }> }
