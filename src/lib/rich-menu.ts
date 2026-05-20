@@ -32,22 +32,26 @@ async function deleteAllRichMenus(): Promise<void> {
 
 async function createRichMenu(): Promise<string> {
   const body = {
-    size: { width: 2500, height: 843 },
+    size: { width: 2500, height: 1686 },
     selected: true,
     name: 'Main Menu',
     chatBarText: 'メニュー',
     areas: [
       {
-        bounds: { x: 0, y: 0, width: 833, height: 843 },
+        bounds: { x: 0, y: 0, width: 1250, height: 843 },
         action: { type: 'postback', label: '課題登録', data: 'action=register' },
       },
       {
-        bounds: { x: 833, y: 0, width: 834, height: 843 },
+        bounds: { x: 1250, y: 0, width: 1250, height: 843 },
         action: { type: 'postback', label: '課題削除', data: 'action=show_delete_list' },
       },
       {
-        bounds: { x: 1667, y: 0, width: 833, height: 843 },
+        bounds: { x: 0, y: 843, width: 1250, height: 843 },
         action: { type: 'postback', label: '課題一覧', data: 'action=list' },
+      },
+      {
+        bounds: { x: 1250, y: 843, width: 1250, height: 843 },
+        action: { type: 'postback', label: '改善アイディア', data: 'action=show_improve_list' },
       },
     ],
   }
@@ -100,11 +104,12 @@ export async function setupRichMenu(): Promise<void> {
   const richMenuId = await createRichMenu()
 
   console.log('メニュー画像を生成中...')
-  const png = await createSectionedPng(2500, 843, [
+  const png = await createSectionedPng(2500, 1686, [
     { color: [52, 168, 83],  icon: '＋', label: '課題登録' },
     { color: [234, 67, 53],  icon: '✕', label: '課題削除' },
     { color: [66, 133, 244], icon: '☰', label: '課題一覧' },
-  ])
+    { color: [255, 152, 0],  icon: '◆', label: '改善' },
+  ], 2)
 
   console.log('画像をアップロード中...')
   await uploadRichMenuImage(richMenuId, png)
