@@ -6,4 +6,5 @@ export interface NotionIssue {
   title: string
   status: IssueStatus
   createdAt: string
+  idea?: string
 }

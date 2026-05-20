@@ -39,6 +39,30 @@ export async function createIssue(title: string): Promise<NotionIssue> {
   }
 }
 
+export async function getIssue(pageId: string): Promise<NotionIssue> {
+  const notion = getClient()
+  const page = await notion.pages.retrieve({ page_id: pageId })
+  const p = page as RawPage
+  return {
+    id: p.id,
+    number: extractNumber(p.properties),
+    title: extractTitle(p.properties),
+    status: extractStatus(p.properties),
+    createdAt: p.created_time,
+    idea: extractIdea(p.properties),
+  }
+}
+
+export async function updateIssueIdea(pageId: string, idea: string): Promise<void> {
+  const notion = getClient()
+  await notion.pages.update({
+    page_id: pageId,
+    properties: {
+      改善アイディア: { rich_text: idea ? [{ text: { content: idea } }] : [] },
+    },
+  })
+}
+
 export async function deleteIssue(pageId: string): Promise<void> {
   const notion = getClient()
   await notion.pages.update({
@@ -86,4 +110,9 @@ function extractStatus(props: Record<string, unknown>): IssueStatus {
 function extractNumber(props: Record<string, unknown>): number {
   const prop = props['通番'] as { unique_id?: { number: number } } | undefined
   return prop?.unique_id?.number ?? 0
+}
+
+function extractIdea(props: Record<string, unknown>): string {
+  const prop = props['改善アイディア'] as { rich_text?: Array<{ plain_text: string }> } | undefined
+  return prop?.rich_text?.[0]?.plain_text ?? ''
 }

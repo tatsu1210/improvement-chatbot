@@ -1,6 +1,7 @@
 import { waitUntil } from '@vercel/functions'
 import { verifyLineSignature } from '@/lib/verify-signature'
-import { createIssue, listIssues, deleteIssue } from '@/services/notion'
+import { createIssue, listIssues, deleteIssue, getIssue, updateIssueIdea } from '@/services/notion'
+import { generateImprovementIdea } from '@/services/ai'
 import {
   replyWithIssueCreated,
   replyWithIssueList,
@@ -8,6 +9,10 @@ import {
   replyWithRegisterPrompt,
   replyWithDeleteList,
   replyWithDeleteConfirm,
+  replyWithImproveList,
+  replyWithIdeaProposal,
+  replyWithIdeaApproved,
+  replyWithIdeaCancelled,
 } from '@/services/line-reply'
 import type { LineWebhookBody, LineMessageEvent, LinePostbackEvent } from '@/types/line-events'
 
@@ -78,6 +83,23 @@ async function handlePostbackEvent(event: LinePostbackEvent): Promise<void> {
       if (!issueId) throw new Error('issueId is missing')
       await deleteIssue(issueId)
       await replyWithDeleteConfirm(replyToken)
+    } else if (action === 'show_improve_list') {
+      const issues = await listIssues()
+      await replyWithImproveList(replyToken, issues)
+    } else if (action === 'improve') {
+      const issueId = params.get('issueId')
+      if (!issueId) throw new Error('issueId is missing')
+      const issue = await getIssue(issueId)
+      const idea = await generateImprovementIdea(issue.title)
+      await updateIssueIdea(issueId, idea)
+      await replyWithIdeaProposal(replyToken, issue, idea)
+    } else if (action === 'approve_idea') {
+      await replyWithIdeaApproved(replyToken)
+    } else if (action === 'cancel_idea') {
+      const issueId = params.get('issueId')
+      if (!issueId) throw new Error('issueId is missing')
+      await updateIssueIdea(issueId, '')
+      await replyWithIdeaCancelled(replyToken)
     }
   } catch {
     await replyWithError(replyToken)
