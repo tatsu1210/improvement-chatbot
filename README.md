@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 職場改善チャットボット
 
-## Getting Started
+LINE上で職場の改善課題を記録・管理するチャットボットです。
 
-First, run the development server:
+## 機能
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 課題の登録
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Rich Menu の「課題を登録」ボタンをタップすると、課題タイトルの入力を促すメッセージが届きます。テキストを送信するだけで Notion に課題が記録されます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 課題の一覧表示
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Rich Menu の「一覧を見る」ボタンをタップすると、登録済みの課題が一覧で表示されます。削除済みの課題は表示されません。
 
-## Learn More
+### 課題の削除
 
-To learn more about Next.js, take a look at the following resources:
+Rich Menu の「課題を削除」ボタンをタップすると、登録済みの課題がカルーセル形式で表示されます。削除したい課題のボタンをタップすると論理削除（ステータスを「削除済み」に変更）されます。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Rich Menu
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+LINEのトーク画面下部に常時表示されるメニューから「課題を登録」「一覧を見る」「課題を削除」の3つの操作にアクセスできます。
 
-## Deploy on Vercel
+## データ管理
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+課題データは Notion データベースで管理されます。各課題には以下の情報が記録されます。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| 項目 | 内容 |
+|---|---|
+| 課題タイトル | 登録時に入力したテキスト |
+| ステータス | Raw / 整理済み / 対応中 / 完了 / 削除済み |
+| 通番 | 自動採番されるID |
+| 記録日時 | 登録した日時 |
